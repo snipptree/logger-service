@@ -15,7 +15,7 @@ import (
 const (
 	webPort  = "80"
 	rpcPort  = "5001"
-	mongoURL = "mongodb://mongo:27017/"
+	mongoURL = "mongodb+srv://REDACTED_USER:REDACTED_PASSWORD@snipptree-dev.cza8e.mongodb.net/?retryWrites=true&w=majority&appName=snipptree-dev"
 	gRPCPort = "5001"
 )
 
@@ -63,16 +63,12 @@ func (app *Config) Serve() {
 
 func connectToMongo() (*mongo.Client, error) {
 	clientOptions := options.Client().ApplyURI(mongoURL)
-	clientOptions.SetAuth(options.Credential{
-		Username: "admin",
-		Password: "password",
-	})
 
 	c, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
 		log.Println("error connceting:", err)
 		return nil, err
 	}
-	log.Println("connected to mongo database!")
+	log.Println("connected to mongo db")
 	return c, nil
 }
