@@ -19,10 +19,8 @@ const (
 	gRPCPort = "5001"
 )
 
-var client *mongo.Client
-
 type Config struct {
-	Models data.Models
+	Repo data.Repository
 }
 
 func main() {
@@ -31,20 +29,18 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	client = mongoClient
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	defer func() {
-		if err = client.Disconnect(ctx); err != nil {
+		if err = mongoClient.Disconnect(ctx); err != nil {
 			panic(err)
 		}
 	}()
 
-	app := Config{
-		Models: data.New(client),
-	}
+	app := Config{}
+	app.setupRepo(mongoClient)
 
 	log.Println("starting service on", webPort)
 	app.Serve()
@@ -71,4 +67,9 @@ func connectToMongo() (*mongo.Client, error) {
 	}
 	log.Println("connected to mongo db")
 	return c, nil
+}
+
+func (app *Config) setupRepo(mongoClient *mongo.Client) {
+	loggerRepo := data.NewLoggerRepository(mongoClient)
+	app.Repo = loggerRepo
 }

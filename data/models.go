@@ -11,18 +11,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var client *mongo.Client
-
-func New(mongo *mongo.Client) Models {
-	client = mongo
-
-	return Models{
-		LogEntry: LogEntry{},
-	}
+type LoggerRepository struct {
+	client *mongo.Client
 }
 
-type Models struct {
-	LogEntry LogEntry
+func NewLoggerRepository(mongoClient *mongo.Client) *LoggerRepository {
+	return &LoggerRepository{
+		client: mongoClient,
+	}
 }
 
 type LogEntry struct {
@@ -33,8 +29,8 @@ type LogEntry struct {
 	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
 }
 
-func (l *LogEntry) Insert(logEntry LogEntry) error {
-	collection := client.Database("logs").Collection("logs")
+func (repo *LoggerRepository) Insert(logEntry LogEntry) error {
+	collection := repo.client.Database("logs").Collection("logs")
 	_, err := collection.InsertOne(context.TODO(), LogEntry{
 		Name:      logEntry.Name,
 		Data:      logEntry.Data,
@@ -48,11 +44,11 @@ func (l *LogEntry) Insert(logEntry LogEntry) error {
 	return nil
 }
 
-func (l *LogEntry) All() ([]*LogEntry, error) {
+func (repo *LoggerRepository) All() ([]*LogEntry, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	collection := client.Database("logs").Collection("logs")
+	collection := repo.client.Database("logs").Collection("logs")
 	opts := options.Find()
 	opts.SetSort(bson.D{{Key: "created_at", Value: -1}})
 	cursor, err := collection.Find(context.TODO(), bson.D{}, opts)
@@ -76,11 +72,11 @@ func (l *LogEntry) All() ([]*LogEntry, error) {
 	return logs, nil
 }
 
-func (l *LogEntry) GetOne(id string) (*LogEntry, error) {
+func (repo *LoggerRepository) GetOne(id string) (*LogEntry, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	collection := client.Database("logs").Collection("logs")
+	collection := repo.client.Database("logs").Collection("logs")
 
 	objectId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -96,11 +92,11 @@ func (l *LogEntry) GetOne(id string) (*LogEntry, error) {
 	return &logEntry, nil
 }
 
-func (l *LogEntry) DropCollection() error {
+func (repo *LoggerRepository) DropCollection() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	collection := client.Database("logs").Collection("logs")
+	collection := repo.client.Database("logs").Collection("logs")
 
 	if err := collection.Drop(ctx); err != nil {
 		return err
@@ -109,13 +105,13 @@ func (l *LogEntry) DropCollection() error {
 	return nil
 }
 
-func (l *LogEntry) Update() (*mongo.UpdateResult, error) {
+func (repo *LoggerRepository) Update(log LogEntry) (*mongo.UpdateResult, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	collection := client.Database("logs").Collection("logs")
+	collection := repo.client.Database("logs").Collection("logs")
 
-	objectId, err := primitive.ObjectIDFromHex(l.ID)
+	objectId, err := primitive.ObjectIDFromHex(log.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +121,8 @@ func (l *LogEntry) Update() (*mongo.UpdateResult, error) {
 		bson.M{"_id": objectId},
 		bson.D{
 			{Key: "$set", Value: bson.D{
-				{Key: "name", Value: l.Name},
-				{Key: "data", Value: l.Data},
+				{Key: "name", Value: log.Name},
+				{Key: "data", Value: log.Data},
 				{Key: "updated_at", Value: time.Now()},
 			}},
 		},
