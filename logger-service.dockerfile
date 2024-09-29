@@ -1,7 +1,4 @@
 FROM alpine:latest
-
-RUN mkdir /app
-
-COPY loggerServiceApp /app
-
-CMD [ "/app/loggerServiceApp"]
+WORKDIR /app
+COPY loggerServiceApp /app/loggerServiceApp
+CMD ["./loggerServiceApp"]
