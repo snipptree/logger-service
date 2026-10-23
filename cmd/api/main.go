@@ -6,16 +6,19 @@ import (
 	"log"
 	"log-service/data"
 	"net/http"
+	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// mongoURL is read from the MONGO_URL environment variable.
+var mongoURL = os.Getenv("MONGO_URL")
+
 const (
 	webPort  = "80"
 	rpcPort  = "5001"
-	mongoURL = "mongodb+srv://REDACTED_USER:REDACTED_PASSWORD@snipptree-dev.cza8e.mongodb.net/?retryWrites=true&w=majority&appName=snipptree-dev"
 	gRPCPort = "5001"
 )
 
@@ -43,6 +46,9 @@ func main() {
 	app.setupRepo(mongoClient)
 
 	log.Println("starting service on", webPort)
+	if mongoURL == "" {
+		log.Fatal("MONGO_URL must be set")
+	}
 	app.Serve()
 }
 
